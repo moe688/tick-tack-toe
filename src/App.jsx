@@ -8,9 +8,8 @@ function Square({ value, onSquareClick }) {
   );
 }
 
-export default function Board() {
-  const [xIsNext, setXIsNext] = useState(true);
-  const [squares, setSquares] = useState(Array(9).fill(null));
+function Board({ xIsNext, squares, onPlay }) {
+  // const [squares, setSquares] = useState(Array(9).fill(null));
   // this returns:
   // squares = [null, null, null, null, null, null, null, null, null];
   function handleClick(i) {
@@ -24,8 +23,7 @@ export default function Board() {
     } else {
       nextSqaures[i] = "O";
     }
-    setSquares(nextSqaures);
-    setXIsNext(!xIsNext);
+    onPlay(nextSqaures);
   }
   const winner = calculateWinner(squares);
   let status;
@@ -67,24 +65,24 @@ so setSquare will update the old state "square" with the new state that I passed
       <div className="board-row">
         <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
         {/*
-I didn't write just onSquareClick={handleClick(0)}, because this would have made a loophole.
-the code would have executed handleClick(0) immediately "even before the click event happens", which would trigger setSquare(...) inside it.
-setSquares would then trigger a state change, which requires the Board to re-render.
-Board re-renders, it reaches this line 
-<Square value={squares[0]} onSquareClick={handleClick(0)} />
-which again will run handleClick immediately, and the loop goes on.
-therefore I wrap handleClick(0) inside an arrow function. then this function is only passed and not immediately executed.
-so when onClick is triggered, it runs the arrow function that was passed as a reference, which is this:
-() => handleClick(0)
-and this function on the other hand, will run the function handleClick, and pass the argument 0
-handleClick(0)
-since the original handleClick is formed like this:
-handleClick(i)
-it will automatically replace the "i" with the "0"that we passed already.
-then it will execute:
-nextSquares[0]="X"
-and then call setSquares to update squares with nextSquares, it will be re-rendered.
-*/}
+          I didn't write just onSquareClick={handleClick(0)}, because this would have made a loophole.
+          the code would have executed handleClick(0) immediately "even before the click event happens", which would trigger setSquare(...) inside it.
+          setSquares would then trigger a state change, which requires the Board to re-render.
+          Board re-renders, it reaches this line 
+          <Square value={squares[0]} onSquareClick={handleClick(0)} />
+          which again will run handleClick immediately, and the loop goes on.
+          therefore I wrap handleClick(0) inside an arrow function. then this function is only passed and not immediately executed.
+          so when onClick is triggered, it runs the arrow function that was passed as a reference, which is this:
+          () => handleClick(0)
+          and this function on the other hand, will run the function handleClick, and pass the argument 0
+          handleClick(0)
+          since the original handleClick is formed like this:
+          handleClick(i)
+          it will automatically replace the "i" with the "0"that we passed already.
+          then it will execute:
+          nextSquares[0]="X"
+          and then call setSquares to update squares with nextSquares, it will be re-rendered.
+          */}
         <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
         <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
       </div>
@@ -99,6 +97,45 @@ and then call setSquares to update squares with nextSquares, it will be re-rende
         <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
       </div>
     </>
+  );
+}
+
+export default function Game() {
+  const [history, setHistory] = useState([Array(9).fill(null)]);
+  const [currentMove, setCurrentMove] = useState(0);
+  const xIsNext = currentMove % 2 === 0;
+  const currentSquares = history[currentMove];
+  function handlePlay(nextSqaures) {
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSqaures];
+    setHistory(nextHistory);
+    setCurrentMove(nextHistory.length - 1);
+  }
+  function jumpTo(nextMove) {
+    setCurrentMove(nextMove);
+  }
+
+  const moves = history.map((squares, move) => {
+    let description;
+    if (move > 0) {
+      description = "Go to move #" + move;
+    } else {
+      description = "Go to game start";
+    }
+    return (
+      <li key={move}>
+        <button onClick={() => jumpTo(move)}>{description}</button>
+      </li>
+    );
+  });
+  return (
+    <div className="game">
+      <div className="game-board">
+        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+      </div>
+      <div className="game-info">
+        <ol>{moves}</ol>
+      </div>
+    </div>
   );
 }
 
